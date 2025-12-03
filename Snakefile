@@ -8,6 +8,10 @@ HISAT2_INDEX = "pepperbase/T2T_hisat"
 SAM_DIR = "data/HiSat2_snakefile_sam"
 BAM_DIR = "data/HiSat2_snakefile_bam"
 BAI_DIR = "data/HiSat2_snakefile_bai"
+STRINGTIE_DIR = "data/stringtieOutput_snakefile"
+
+# GTF/GFF file for StringTie
+GTF = "pepperbase/capsicum_genome.gff"
 
 # SAMPLE DISCOVERY: look for all *_1.fastq.gz files and extract sample names
 import glob
@@ -16,10 +20,12 @@ SAMPLES = [
     for f in glob.glob(f"{FASTQ_DIR}/*_1.fastq.gz")
 ]
 
-# final targets: one .bam.bai per sample (same as your old Snakefile)
+
 rule all:
     input:
-        expand(f"{BAI_DIR}/{{sample}}.bam.bai", sample=SAMPLES)
+        expand(f"{BAI_DIR}/{{sample}}.bam.bai", sample=SAMPLES) +
+        expand(f"{STRINGTIE_DIR}/{{sample}}_o", sample=SAMPLES) +
+        expand(f"{STRINGTIE_DIR}/{{sample}}_A", sample=SAMPLES)
 
 # HISAT2 to produce SAM
 rule hisat2:
@@ -61,4 +67,20 @@ rule index_bam:
         """
         mkdir -p {BAI_DIR}
         samtools index {input.bam} {output.bai}
+        """
+
+# StringTie: assemble / quantify using sorted BAMs
+rule stringtie:
+    input:
+        bam = f"{BAM_DIR}/{{sample}}.bam"
+    output:
+        o = f"{STRINGTIE_DIR}/{{sample}}_o",
+        A = f"{STRINGTIE_DIR}/{{sample}}_A"
+    threads: 32
+    params:
+        gtf = GTF
+    shell:
+        """
+        mkdir -p {STRINGTIE_DIR}
+        stringtie -p {threads} {input.bam} -G {params.gtf} -o {output.o} -A {output.A}
         """
