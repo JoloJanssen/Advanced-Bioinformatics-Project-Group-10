@@ -1,63 +1,64 @@
 # Directory containing FASTQ files
 FASTQ_DIR = "data/data_sample"
 
-# Output directory for BAM files
-OUTDIR = "data/HiSat2_snakefile"
-
 # Hisat2 index basename (no .1.ht2 etc.)
-HISAT2_INDEX = "/pepperbase/T2T_hisat"
+HISAT2_INDEX = "pepperbase/T2T_hisat"
 
-# SAMPLE DISCOVERY
-# Look for all *_1.fastq.gz files and extract sample names
+# Output directories
+SAM_DIR = "data/HiSat2_snakefile_sam"
+BAM_DIR = "data/HiSat2_snakefile_bam"
+BAI_DIR = "data/HiSat2_snakefile_bai"
+
+# SAMPLE DISCOVERY: look for all *_1.fastq.gz files and extract sample names
 import glob
 SAMPLES = [
     f.replace("_1.fastq.gz", "").split("/")[-1]
     for f in glob.glob(f"{FASTQ_DIR}/*_1.fastq.gz")
 ]
 
-
-# BAM indices
+# final targets: one .bam.bai per sample (same as your old Snakefile)
 rule all:
     input:
-        expand(f"{OUTDIR}/{{sample}}.bam.bai", sample=SAMPLES)
+        expand(f"{BAI_DIR}/{{sample}}.bam.bai", sample=SAMPLES)
 
-# 1. HISAT2 MAPPING to SAM
+# HISAT2 to produce SAM
 rule hisat2:
     input:
-        reads1 = lambda wildcards: f"{FASTQ_DIR}/{wildcards.sample}_1.fastq.gz",
-        reads2 = lambda wildcards: f"{FASTQ_DIR}/{wildcards.sample}_2.fastq.gz",
+        reads1 = lambda wc: f"{FASTQ_DIR}/{wc.sample}_1.fastq.gz",
+        reads2 = lambda wc: f"{FASTQ_DIR}/{wc.sample}_2.fastq.gz",
     output:
-        sam = f"{OUTDIR}/{{sample}}.sam"
-    threads: 8
+        sam = f"{SAM_DIR}/{{sample}}.sam"
+    threads: 32
     params:
         index = HISAT2_INDEX
     shell:
         """
-        mkdir -p {OUTDIR}
+        mkdir -p {SAM_DIR}
         hisat2 -p {threads} -x {params.index} \
             -1 {input.reads1} -2 {input.reads2} \
             -S {output.sam}
         """
 
-# 2. SAM to Sorted BAM
-rule sort_sam:
+# SAM to sorted BAM
+rule sam_to_bam:
     input:
-        sam = f"{OUTDIR}/{{sample}}.sam"
+        sam = f"{SAM_DIR}/{{sample}}.sam"
     output:
-        bam = f"{OUTDIR}/{{sample}}.bam"
+        bam = f"{BAM_DIR}/{{sample}}.bam"
     shell:
         """
+        mkdir -p {BAM_DIR}
         samtools view -Sb {input.sam} | samtools sort -o {output.bam}
         """
 
-
-# 3. BAM to BAM index
+# BAM to BAM index (.bam.bai)
 rule index_bam:
     input:
-        bam = f"{OUTDIR}/{{sample}}.bam"
+        bam = f"{BAM_DIR}/{{sample}}.bam"
     output:
-        bai = f"{OUTDIR}/{{sample}}.bam.bai"
+        bai = f"{BAI_DIR}/{{sample}}.bam.bai"
     shell:
         """
+        mkdir -p {BAI_DIR}
         samtools index {input.bam} {output.bai}
         """
