@@ -1,43 +1,63 @@
-# To define samples and tools
-SAMPLES = ["X"]
-TOOLS = ["hisat2"]
+# Directory containing FASTQ files
+FASTQ_DIR = "data/data_sample"
 
-# This will be at the end: all BAM indexes
+# Output directory for BAM files
+OUTDIR = "data/HiSat2_snakefile"
+
+# Hisat2 index basename (no .1.ht2 etc.)
+HISAT2_INDEX = "/pepperbase/T2T_hisat"
+
+# SAMPLE DISCOVERY
+# Look for all *_1.fastq.gz files and extract sample names
+import glob
+SAMPLES = [
+    f.replace("_1.fastq.gz", "").split("/")[-1]
+    for f in glob.glob(f"{FASTQ_DIR}/*_1.fastq.gz")
+]
+
+
+# BAM indices
 rule all:
     input:
-        expand("{sample}_{tool}.bam.bai", sample=SAMPLES, tool=TOOLS)
+        expand(f"{OUTDIR}/{{sample}}.bam.bai", sample=SAMPLES)
 
-# 1. Map reads to reference genome with HISAT2
+# 1. HISAT2 MAPPING to SAM
 rule hisat2:
     input:
-        reads1="data/data_sample/{sample}_1.fastq.gz",
-        reads2="data/data_sample/{sample}_2.fastq.gz",
-        index="/pepperbase/T2T_hisat.1.ht2"
+        reads1 = lambda wildcards: f"{FASTQ_DIR}/{wildcards.sample}_1.fastq.gz",
+        reads2 = lambda wildcards: f"{FASTQ_DIR}/{wildcards.sample}_2.fastq.gz",
     output:
-        "{sample}_{tool}.sam"
+        sam = f"{OUTDIR}/{{sample}}.sam"
+    threads: 8
     params:
-        index="/blasted/pepperbase/T2T_hisat"
-    threads: 1
+        index = HISAT2_INDEX
     shell:
-        "hisat2 -p {threads} -x {params.index} -1 {input.reads1} -2 {input.reads2} -S {output}"
-        Command for one sample: hisat2 -x pepperbase/T2T_hisat -1 data/data_sample/SRR8692578_1.fastq.gz -2 data/data_sample/SRR8692578_2.fastq.gz -S SRR8692578.sam
+        """
+        mkdir -p {OUTDIR}
+        hisat2 -p {threads} -x {params.index} \
+            -1 {input.reads1} -2 {input.reads2} \
+            -S {output.sam}
+        """
 
-# 2. Convert SAM to sorted BAM
+# 2. SAM to Sorted BAM
 rule sort_sam:
     input:
-        "{sample}_{tool}.sam"
+        sam = f"{OUTDIR}/{{sample}}.sam"
     output:
-        "{sample}_{tool}.bam"
+        bam = f"{OUTDIR}/{{sample}}.bam"
     shell:
-        "samtools view -Sb {input} | samtools sort -o {output}"
-        #command: samtools view -Sb SRR8692568.sam | samtools sort -o SRR8692568.sorted.bam
+        """
+        samtools view -Sb {input.sam} | samtools sort -o {output.bam}
+        """
 
-# 3. Index the sorted BAM
+
+# 3. BAM to BAM index
 rule index_bam:
     input:
-        "{sample}_{tool}.bam"
+        bam = f"{OUTDIR}/{{sample}}.bam"
     output:
-        "{sample}_{tool}.bam.bai"
+        bai = f"{OUTDIR}/{{sample}}.bam.bai"
     shell:
-        "samtools index {input} {output}"
-        #command: samtools index SRR8692568.sorted.bam SRR8692568.bai
+        """
+        samtools index {input.bam} {output.bai}
+        """
