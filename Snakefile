@@ -23,8 +23,10 @@ SAMPLES = [
 
 rule all:
     input:
-        expand(f"{BAI_DIR}/{{sample}}.bam.bai", sample=SAMPLES) +
-        expand(f"{STRINGTIE_DIR}/{{sample}}.gtf", sample=SAMPLES)
+        expand(f"{BAI_DIR}/{{sample}}.bam.bai", sample=SAMPLES),
+        expand(f"{STRINGTIE_DIR}/{{sample}}.gtf", sample=SAMPLES),
+        "data/stringtie_GTF_snakefile/gtf_list.txt"
+
 
 # HISAT2 to produce SAM
 rule hisat2:
@@ -83,3 +85,14 @@ rule stringtie:
         stringtie -p {threads} {input.bam} -G {params.gtf} -o {output.gtf}
         """
 
+# .txt file with GTF paths
+rule gtf_list:
+    input:
+        expand(f"{STRINGTIE_DIR}/{{sample}}.gtf", sample=SAMPLES)
+    output:
+        "data/stringtie_GTF_snakefile/gtf_list.txt"
+    run:
+        with open(output[0], "w") as f:
+            for sample in SAMPLES:
+                gtf_path = f"{STRINGTIE_DIR}/{sample}.gtf"
+                f.write(f"{gtf_path}\n")
