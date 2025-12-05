@@ -8,7 +8,7 @@ HISAT2_INDEX = "pepperbase/T2T_hisat"
 SAM_DIR = "data/HiSat2_snakefile_sam"
 BAM_DIR = "data/HiSat2_snakefile_bam"
 BAI_DIR = "data/HiSat2_snakefile_bai"
-STRINGTIE_DIR = "data/stringtieOutput_snakefile"
+STRINGTIE_DIR = "data/stringtie_GTF_snakefile"
 
 # GTF/GFF file for StringTie
 GTF = "pepperbase/capsicum_genome.gff"
@@ -24,8 +24,7 @@ SAMPLES = [
 rule all:
     input:
         expand(f"{BAI_DIR}/{{sample}}.bam.bai", sample=SAMPLES) +
-        expand(f"{STRINGTIE_DIR}/{{sample}}_o", sample=SAMPLES) +
-        expand(f"{STRINGTIE_DIR}/{{sample}}_A", sample=SAMPLES)
+        expand(f"{STRINGTIE_DIR}/{{sample}}.gtf", sample=SAMPLES)
 
 # HISAT2 to produce SAM
 rule hisat2:
@@ -50,7 +49,7 @@ rule sam_to_bam:
     input:
         sam = f"{SAM_DIR}/{{sample}}.sam"
     output:
-        bam = f"{BAM_DIR}/{{sample}}.bam"
+        bam = f"{BAM_DIR}/{{sample}}.sorted.bam"
     shell:
         """
         mkdir -p {BAM_DIR}
@@ -60,7 +59,7 @@ rule sam_to_bam:
 # BAM to BAM index (.bam.bai)
 rule index_bam:
     input:
-        bam = f"{BAM_DIR}/{{sample}}.bam"
+        bam = f"{BAM_DIR}/{{sample}}.sorted.bam"
     output:
         bai = f"{BAI_DIR}/{{sample}}.bam.bai"
     shell:
@@ -72,15 +71,15 @@ rule index_bam:
 # StringTie: assemble / quantify using sorted BAMs
 rule stringtie:
     input:
-        bam = f"{BAM_DIR}/{{sample}}.bam"
+        bam = f"{BAM_DIR}/{{sample}}.sorted.bam"
     output:
-        o = f"{STRINGTIE_DIR}/{{sample}}_o",
-        A = f"{STRINGTIE_DIR}/{{sample}}_A"
+        gtf = f"{STRINGTIE_DIR}/{{sample}}.gtf"
     threads: 32
     params:
         gtf = GTF
     shell:
         """
         mkdir -p {STRINGTIE_DIR}
-        stringtie -p {threads} {input.bam} -G {params.gtf} -o {output.o} -A {output.A}
+        stringtie -p {threads} {input.bam} -G {params.gtf} -o {output.gtf}
         """
+
