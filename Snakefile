@@ -9,6 +9,7 @@ SAM_DIR = "data/HiSat2_snakefile_sam"
 BAM_DIR = "data/HiSat2_snakefile_bam"
 BAI_DIR = "data/HiSat2_snakefile_bai"
 STRINGTIE_DIR = "data/stringtie_GTF_snakefile"
+COUNT_DIR = "data/counts_stringtie_snakefile"
 
 # GTF/GFF file for StringTie
 GTF = "pepperbase/capsicum_genome.gff"
@@ -25,8 +26,8 @@ rule all:
     input:
         expand(f"{BAI_DIR}/{{sample}}.bam.bai", sample=SAMPLES),
         expand(f"{STRINGTIE_DIR}/{{sample}}.gtf", sample=SAMPLES),
-        "data/stringtie_GTF_snakefile/gtf_list.txt"
-
+        f"{COUNT_DIR}/merged_stringtie.gtf"
+        
 
 # HISAT2 to produce SAM
 rule hisat2:
@@ -90,9 +91,24 @@ rule gtf_list:
     input:
         expand(f"{STRINGTIE_DIR}/{{sample}}.gtf", sample=SAMPLES)
     output:
-        "data/stringtie_GTF_snakefile/gtf_list.txt"
+        f"{STRINGTIE_DIR}/gtf_list.txt"
     run:
         with open(output[0], "w") as f:
             for sample in SAMPLES:
-                gtf_path = f"{STRINGTIE_DIR}/{sample}.gtf"
-                f.write(f"{gtf_path}\n")
+                f.write(f"{STRINGTIE_DIR}/{sample}.gtf\n")
+
+# StringTie merge mode GTF files
+rule stringtie_merge:
+    input:
+        gtf_list = f"{STRINGTIE_DIR}/gtf_list.txt"
+    output:
+        merged_gtf = f"{COUNT_DIR}/merged_stringtie.gtf"
+    threads: 32
+    params:
+        gtf = GTF
+    shell:
+        """
+        mkdir -p {COUNT_DIR}
+        stringtie --merge -p {threads} -G {params.gtf} \
+            -o {output.merged_gtf} {input.gtf_list}
+        """
