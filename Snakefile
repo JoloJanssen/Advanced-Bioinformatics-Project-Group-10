@@ -26,6 +26,7 @@ rule all:
     input:
         expand(f"{BAI_DIR}/{{sample}}.bam.bai", sample=SAMPLES),
         expand(f"{STRINGTIE_DIR}/{{sample}}.gtf", sample=SAMPLES),
+        expand(f"{COUNT_DIR}/{{sample}}_quant.gtf", sample=SAMPLES),
         f"{COUNT_DIR}/merged_stringtie.gtf"
         
 
@@ -111,4 +112,18 @@ rule stringtie_merge:
         mkdir -p {COUNT_DIR}
         stringtie --merge -p {threads} -G {params.gtf} \
             -o {output.merged_gtf} {input.gtf_list}
+        """
+
+# StringTie quantification with merged GTF
+rule stringtie_quant:
+    input:
+        bam = f"{BAM_DIR}/{{sample}}.sorted.bam",
+        merged_gtf = f"{COUNT_DIR}/merged_stringtie.gtf"
+    output:         
+        quant_gtf = f"{COUNT_DIR}/{{sample}}_quant.gtf"
+    threads: 32
+    shell:
+        """
+        stringtie -e -B -p {threads} -G {input.merged_gtf} \
+            -o {output.quant_gtf} {input.bam}
         """
