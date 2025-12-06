@@ -25,9 +25,7 @@ SAMPLES = [
 rule all:
     input:
         expand(f"{BAI_DIR}/{{sample}}.bam.bai", sample=SAMPLES),
-        expand(f"{STRINGTIE_DIR}/{{sample}}.gtf", sample=SAMPLES),
-        expand(f"{COUNT_DIR}/{{sample}}_quant.gtf", sample=SAMPLES),
-        f"{COUNT_DIR}/merged_stringtie.gtf"
+        expand(f"{COUNT_DIR}/{{sample}}/{{sample}}_quant.gtf", sample=SAMPLES)
         
 
 # HISAT2 to produce SAM
@@ -120,7 +118,8 @@ rule stringtie_quant:
         bam = f"{BAM_DIR}/{{sample}}.sorted.bam",
         merged_gtf = f"{COUNT_DIR}/merged_stringtie.gtf"
     output:         
-        quant_gtf = f"{COUNT_DIR}/{{sample}}_quant.gtf"
+        quant_gtf = f"{COUNT_DIR}/{{sample}}/{{sample}}_quant.gtf",
+        sample_dir = directory(f"{COUNT_DIR}/{{sample}}")
     threads: 32
     shell:
         """
