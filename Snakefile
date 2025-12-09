@@ -1,3 +1,13 @@
+# Use bash for all shell commands
+shell.executable("/bin/bash")
+
+# Path to your conda setup script inside prog/
+CONDA_SH = "/lustre/BIF/nobackup/BIF30806/blasted/prog/etc/profile.d/conda.sh"
+
+# Load conda + activate the environment for every rule
+shell.prefix(f"source {CONDA_SH} && conda activate testenv")
+
+
 # Directory containing FASTQ files
 FASTQ_DIR = "data/data_sample"
 
@@ -27,7 +37,9 @@ rule all:
         expand(f"{BAI_DIR}/{{sample}}.bam.bai", sample=SAMPLES),
         expand(f"{STRINGTIE_DIR}/{{sample}}.gtf", sample=SAMPLES),
         expand(f"{COUNT_DIR}/{{sample}}/{{sample}}_quant.gtf", sample=SAMPLES),
-        f"{COUNT_DIR}/merged_stringtie.gtf"
+        f"{COUNT_DIR}/merged_stringtie.gtf",
+        f"{COUNT_DIR}/gene_count_matrix.csv",
+        f"{COUNT_DIR}/transcript_count_matrix.csv"
         
 
 # HISAT2 to produce SAM
@@ -129,3 +141,33 @@ rule stringtie_quant:
             "stringtie -e -B -p {threads} -G {input.merged_gtf} "
             "-o {output.quant_gtf} {input.bam}"
         )
+
+# Create input list for prepDE (No header, Space-separated)
+rule create_prepde_csv:
+    input:
+        expand(f"{COUNT_DIR}/{{sample}}/{{sample}}_quant.gtf", sample=SAMPLES)
+    output:
+        # Changed extension to .txt to reflect it's not a CSV
+        txt = f"{COUNT_DIR}/prepDE_input.txt" 
+    run:
+        with open(output.txt, "w") as f:
+            # REMOVED header writing line here
+            for sample in SAMPLES:
+                # Changed comma to SPACE below
+                f.write(f"{sample} {COUNT_DIR}/{sample}/{sample}_quant.gtf\n")
+
+# Run prepDE.py to produce count matrices
+rule prepde_counts:
+    input:
+        # Update input to match the new .txt output above
+        txt = f"{COUNT_DIR}/prepDE_input.txt" 
+    output:
+        gene = f"{COUNT_DIR}/gene_count_matrix.csv",
+        transcript = f"{COUNT_DIR}/transcript_count_matrix.csv"
+    shell:
+        """
+        prepDE.py \
+            -i {input.txt} \
+            -g {output.gene} \
+            -t {output.transcript}
+        """
