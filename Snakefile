@@ -20,6 +20,7 @@ BAM_DIR = "data/HiSat2_snakefile_bam"
 BAI_DIR = "data/HiSat2_snakefile_bai"
 STRINGTIE_DIR = "data/stringtie_GTF_snakefile"
 COUNT_DIR = "data/counts_stringtie_snakefile"
+PREPDE_OUT_DIR = "data/prepDE_out_snakefile"
 
 # GTF/GFF file for StringTie
 GTF = "pepperbase/capsicum_genome.gff"
@@ -38,8 +39,8 @@ rule all:
         expand(f"{STRINGTIE_DIR}/{{sample}}.gtf", sample=SAMPLES),
         expand(f"{COUNT_DIR}/{{sample}}/{{sample}}_quant.gtf", sample=SAMPLES),
         f"{COUNT_DIR}/merged_stringtie.gtf",
-        f"{COUNT_DIR}/gene_count_matrix.csv",
-        f"{COUNT_DIR}/transcript_count_matrix.csv"
+        f"{PREPDE_OUT_DIR}/gene_count_matrix.csv",
+        f"{PREPDE_OUT_DIR}/transcript_count_matrix.csv"
         
 
 # HISAT2 to produce SAM
@@ -162,10 +163,11 @@ rule prepde_counts:
         # Update input to match the new .txt output above
         txt = f"{COUNT_DIR}/prepDE_input.txt" 
     output:
-        gene = f"{COUNT_DIR}/gene_count_matrix.csv",
-        transcript = f"{COUNT_DIR}/transcript_count_matrix.csv"
+        gene = f"{PREPDE_OUT_DIR}/gene_count_matrix.csv",
+        transcript = f"{PREPDE_OUT_DIR}/transcript_count_matrix.csv"
     shell:
         """
+        mkdir -p {PREPDE_OUT_DIR}
         prepDE.py \
             -i {input.txt} \
             -g {output.gene} \
