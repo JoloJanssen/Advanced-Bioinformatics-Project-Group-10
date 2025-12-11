@@ -1,7 +1,7 @@
-# Use bash for all shell commands
+# Bash for all shell commands
 shell.executable("/bin/bash")
 
-# Path to your conda setup script inside prog/
+# Path to conda setup script inside prog/
 CONDA_SH = "/lustre/BIF/nobackup/BIF30806/blasted/prog/etc/profile.d/conda.sh"
 
 # Load conda + activate the environment for every rule
