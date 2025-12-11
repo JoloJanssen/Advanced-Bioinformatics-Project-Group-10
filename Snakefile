@@ -12,6 +12,7 @@ shell.prefix(f"source {CONDA_SH} && conda activate testenv")
 # Differential Expression Analysis (Normalization and DEA)
 # Takes transcript_count_matrix.csv as input and produces DEA results
 DEA_SCRIPT = f"{BLASTED_DIR}/scripts/DEA_LimmaVoom.R"
+
 # Plotting (takes DEA results as input)
 # Plotting: Heatmap for Cold Condition
 HEATMAP_COLD_SCRIPT = f"{BLASTED_DIR}/scripts/HeatmapCold.R"
