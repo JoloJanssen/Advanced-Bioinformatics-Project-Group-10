@@ -1,11 +1,22 @@
-# Bash for all shell commands
+# bash for all shell commands
 shell.executable("/bin/bash")
 
 # Path to conda setup script inside prog/
-CONDA_SH = "/lustre/BIF/nobackup/BIF30806/blasted/prog/etc/profile.d/conda.sh"
+BLASTED_DIR = "/lustre/BIF/nobackup/BIF30806/blasted"
+CONDA_SH = f"{BLASTED_DIR}/prog/etc/profile.d/conda.sh"
 
 # Load conda + activate the environment for every rule
 shell.prefix(f"source {CONDA_SH} && conda activate testenv")
+
+# R script PATHS
+# Differential Expression Analysis (Normalization and DEA)
+# Takes transcript_count_matrix.csv as input and produces DEA results
+DEA_SCRIPT = f"{BLASTED_DIR}/scripts/DEA_LimmaVoom.R"
+# Plotting (takes DEA results as input)
+# Plotting: Heatmap for Cold Condition
+HEATMAP_COLD_SCRIPT = f"{BLASTED_DIR}/scripts/HeatmapCold.R"
+# Plotting: Heatmap for NaCl (Salt) Condition
+HEATMAP_NACL_SCRIPT = f"{BLASTED_DIR}/scripts/HeatmapNaCl.R"
 
 
 # Directory containing FASTQ files
