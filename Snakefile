@@ -50,7 +50,7 @@ rule hisat2:
         reads2 = lambda wc: f"{FASTQ_DIR}/{wc.sample}_2.fastq.gz",
     output:
         sam = f"{SAM_DIR}/{{sample}}.sam"
-    threads: 32
+    threads: 20
     params:
         index = HISAT2_INDEX
     shell:
@@ -91,7 +91,7 @@ rule stringtie:
         bam = f"{BAM_DIR}/{{sample}}.sorted.bam"
     output:
         gtf = f"{STRINGTIE_DIR}/{{sample}}.gtf"
-    threads: 32
+    threads: 20
     params:
         gtf = GTF
     shell:
@@ -117,7 +117,7 @@ rule stringtie_merge:
         gtf_list = f"{STRINGTIE_DIR}/gtf_list.txt"
     output:
         merged_gtf = f"{COUNT_DIR}/merged_stringtie.gtf"
-    threads: 32
+    threads: 20
     params:
         gtf = GTF
     shell:
@@ -134,7 +134,7 @@ rule stringtie_quant:
         merged_gtf = f"{COUNT_DIR}/merged_stringtie.gtf"
     output:
         quant_gtf = f"{COUNT_DIR}/{{sample}}/{{sample}}_quant.gtf"
-    threads: 32
+    threads: 20
     run:
         import os
         os.makedirs(os.path.dirname(output.quant_gtf), exist_ok=True)
