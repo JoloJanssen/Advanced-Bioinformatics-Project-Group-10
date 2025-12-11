@@ -10,7 +10,7 @@ shell.prefix(f"source {CONDA_SH} && conda activate testenv")
 
 # R script PATHS
 # Differential Expression Analysis (Normalization and DEA)
-# Takes transcript_count_matrix.csv as input and produces DEA results
+# Takes gene_count_matrix.csv as input and produces DEA results
 DEA_SCRIPT = f"{BLASTED_DIR}/scripts/DEA_LimmaVoom.R"
 
 # Plotting (takes DEA results as input)
